@@ -1,10 +1,8 @@
 package com.ass.br.apiradar.infrastructure.component;
 
 import com.ass.br.apiradar.domain.model.Deformacao;
-import com.sun.media.jai.opimage.MedianFilterRIF;
 import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.processing.CoverageProcessor;
-import org.geotools.coverage.processing.operation.MedianFilter;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.ReferencingFactoryFinder;
 import org.opengis.parameter.ParameterValueGroup;
@@ -12,22 +10,17 @@ import org.opengis.referencing.FactoryException;
 import org.springframework.stereotype.Component;
 
 import org.geotools.coverage.grid.GridCoverage2D;
-import org.geotools.gce.geotiff.GeoTiffReader;
 import org.geotools.gce.geotiff.GeoTiffWriter;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import javax.media.jai.JAI;
-import javax.media.jai.ParameterBlockJAI;
 import javax.imageio.ImageIO;
-import javax.media.jai.operator.MedianFilterDescriptor;
-import javax.media.jai.operator.MedianFilterShape;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.awt.image.renderable.ParameterBlock;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 
 @Component
@@ -83,15 +76,10 @@ public class GeoToolsProcessor {
     }
 
     private GridCoverage2D aplicarFiltroSuavizacao(GridCoverage2D cobertura) {
-        //ParameterBlockJAI parameters = new ParameterBlockJAI("GaussianBlur");
-        //parameters.setSource("source0", cobertura.getRenderedImage());
-        //parameters.setParameter("sigma", 5.0f);
-
         float sigma = 5.0f;
         ParameterBlock pb = new ParameterBlock();
         pb.addSource(cobertura.getRenderedImage());
         pb.add(sigma);
-
 
         RenderedImage processedImage = null;
 
@@ -124,7 +112,6 @@ public class GeoToolsProcessor {
                 }
             }
         }
-        //RenderedImage processedImage = JAI.create("UnsharpMask", pb); //Log, Exp, Scale, Multiply, Convolve, MultiplyConst, DivideByConst.
 
         return new GridCoverageFactory().create(
                 cobertura.getName(),
