@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -19,7 +20,7 @@ public class DeformacaoController {
     private final ProcessarImagemSAR processarImagemSAR;
 
     @PostMapping("/deformacao")
-    public ResponseEntity<DeformacaoResponseDto> criar(@RequestBody DeformacaoRequestDto request) {
+    public ResponseEntity<DeformacaoResponseDto> criar(@RequestBody DeformacaoRequestDto request) throws IOException {
         DeformacaoResponseDto response = registrarDeformacao.registrar(request);
         return ResponseEntity.ok(response);
     }

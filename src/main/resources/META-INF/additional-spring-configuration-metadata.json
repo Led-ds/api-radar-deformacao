@@ -1,0 +1,13 @@
+{
+  "properties": [
+    {
+      "name": "api.key.open.data.nasa",
+      "type": "java.lang.String",
+      "description": "Access key api nasa.gov."
+    },
+    {
+      "name": "api.key.weather",
+      "type": "java.lang.String",
+      "description": "Access key api weather."
+    }
+  ] }

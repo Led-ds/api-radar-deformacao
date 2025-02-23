@@ -24,10 +24,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-security</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -101,16 +98,39 @@
             <artifactId>jai_core</artifactId>
             <version>1.1.3</version>
         </dependency>
+
+        <dependency>
+            <groupId>javax.media</groupId>
+            <artifactId>jai_codec</artifactId>
+            <version>1.1.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.jai-imageio</groupId>
+            <artifactId>jai-imageio-core</artifactId>
+            <version>1.4.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.geotools</groupId>
             <artifactId>gt-coverage</artifactId>
             <version>26.0</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.geotools</groupId>
+            <artifactId>gt-epsg-hsql</artifactId>
+            <version>26.0</version> <!-- Confirme a versão do GeoTools que você está usando -->
+        </dependency>
+
 
     </dependencies>
 
     <repositories>
+        <repository>
+            <id>java.net</id>
+            <url>https://download.java.net/maven/2/</url>
+        </repository>
         <repository>
             <id>osgeo</id>
             <url>https://repo.osgeo.org/repository/release/</url>

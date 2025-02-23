@@ -6,6 +6,7 @@ import com.ass.br.apiradar.presentation.dto.DeformacaoResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 
 @Service
@@ -14,7 +15,7 @@ public class RegistrarDeformacao {
 
     private final AnaliseService analiseService;
 
-    public DeformacaoResponseDto registrar(DeformacaoRequestDto request) {
+    public DeformacaoResponseDto registrar(DeformacaoRequestDto request) throws IOException {
         Deformacao deformacao = Deformacao.builder()
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())

@@ -11,6 +11,6 @@ public class ProcessarImagemSAR {
     private AnaliseService analiseService;
 
     public void executar(String imagemRadarId) {
-        analiseService.processarEAnalisarImagem(imagemRadarId);
+        analiseService.processarEAnalisarImagem(imagemRadarId, null, null);
     }
 }
