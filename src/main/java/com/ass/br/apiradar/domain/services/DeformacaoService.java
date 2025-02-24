@@ -11,11 +11,11 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class RegistrarDeformacao {
+public class DeformacaoService {
 
     private final AnaliseService analiseService;
 
-    public DeformacaoResponseDto registrar(DeformacaoRequestDto request) throws IOException {
+    public DeformacaoResponseDto registrarDeformacao(DeformacaoRequestDto request) throws IOException {
         Deformacao deformacao = Deformacao.builder()
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
@@ -24,20 +24,15 @@ public class RegistrarDeformacao {
                 .build();
 
         Deformacao deformacaoSalva = analiseService.salvarDeformacao(deformacao);
-
         return new DeformacaoResponseDto(deformacaoSalva);
     }
 
-    /**
-     * Lista todas as deformações registradas.
-     *
-     * @return Lista de DTOs de resposta.
-     */
-    public List<DeformacaoResponseDto> listar() {
+    public List<DeformacaoResponseDto> listarDeformacoes() {
         return analiseService.buscarDeformacoes().stream()
                 .map(DeformacaoResponseDto::new)
                 .toList();
     }
 }
+
 
 

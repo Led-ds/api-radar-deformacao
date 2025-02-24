@@ -1,15 +1,13 @@
 package com.ass.br.apiradar.domain.services;
 
-import com.ass.br.apiradar.domain.model.AnaliseResultado;
 import com.ass.br.apiradar.domain.model.Deformacao;
+import com.ass.br.apiradar.domain.model.ImagemRadar;
 import com.ass.br.apiradar.domain.model.dto.NasaImageResponse;
 import com.ass.br.apiradar.domain.repositories.DeformacaoRepository;
-import com.ass.br.apiradar.infrastructure.apis.AlosPalsarClient;
 import com.ass.br.apiradar.infrastructure.apis.NasaOpenDataClient;
-import com.ass.br.apiradar.infrastructure.component.GeoToolsProcessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,37 +20,28 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class AnaliseService {
 
-    @Autowired
-    private AlosPalsarClient alosPalsarClient;
-    @Autowired
-    private GeoToolsProcessor geoToolsProcessor;
-    @Autowired
     private final DeformacaoRepository deformacaoRepository;
-    @Autowired
+    private final ImagemRadarService imagemRadarService;
+    private final ProcessamentoService processamentoService;
     private final NasaOpenDataClient nasaClient;
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    private final ImageService imageService;
+    private final ObjectMapper objectMapper;
 
     @Value("${api.key.open.data.nasa}")
     private String apiKey;
-
 
     public List<Deformacao> buscarDeformacoes() {
         return deformacaoRepository.findAll();
     }
 
-    public Deformacao salvarDeformacao(final Deformacao deformacao) throws IOException {
+    @Transactional
+    public Deformacao salvarDeformacao(Deformacao deformacao) throws IOException {
+        deformacao = deformacaoRepository.save(deformacao); // Garante que tem um ID no banco
         String risco = avaliarRisco(deformacao);
-
         deformacao.setRisco(risco);
-
-        deformacaoRepository.save(deformacao);
-        return deformacao;
+        return deformacaoRepository.save(deformacao); // Atualiza o risco
     }
 
-    public String avaliarRisco(final Deformacao deformacao) throws IOException {
+    private String avaliarRisco(Deformacao deformacao) throws IOException {
         Map<String, Object> resposta = nasaClient.getEarthImage(deformacao.getLongitude(), deformacao.getLatitude(), apiKey);
         NasaImageResponse nasaImage = objectMapper.convertValue(resposta, NasaImageResponse.class);
 
@@ -60,41 +49,15 @@ public class AnaliseService {
             return "Dados insuficientes para avaliação de risco.";
         }
 
-        byte[] imagemBruta = imageService.imageBufferize(nasaImage.getUrl());
+        byte[] imagemBruta = imagemRadarService.baixarImagem(nasaImage.getUrl());
 
-        this.processarEAnalisarImagem(nasaImage.getId(), imagemBruta, deformacao);
+        // Salvar imagem da NASA
+        ImagemRadar imagemRadar = imagemRadarService.salvarImagem(imagemBruta, "NASA", deformacao);
 
-        if (deformacao.getDeslocamento() > 5.0) {
-            return "ALTO RISCO - Grande deslocamento detectado";
-        } else if (deformacao.getDeslocamento() > 2.0) {
-            return "RISCO MODERADO - Pequeno deslocamento, precisa de monitoramento";
-        } else {
-            return "BAIXO RISCO - Nenhuma anomalia detectada";
-        }
-    }
-
-    //TRATAR A IMAGE NO SERVICE É JÁ PASSAR PARA O SERVICE GEOTOOLSPROCESSAR
-    public AnaliseResultado processarEAnalisarImagem(String imagemRadarId, byte[] imagemBruta, Deformacao deformacao) {
-        try {
-
-            // Processar a imagem usando GeoTools
-            var imagemProcessada = geoToolsProcessor.processar(imagemBruta, deformacao);
-
-            // Chamar o modelo de IA para análise
-            //String classificacao = executarAnaliseIA(imagemProcessada);
-
-            // Retornar o resultado da análise
-            return new AnaliseResultado(imagemRadarId, "classificacao", imagemProcessada);
-
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao processar e analisar imagem: " + imagemRadarId, e);
-        }
-    }
-
-    private String executarAnaliseIA(Object imagemProcessada) {
-        // Integração com o serviço REST Python para análise de IA
-        // Substituir com chamada FeignClient para o modelo de IA
-        return "Estável"; // Placeholder: Substituir pelo resultado real
+        // Processar e analisar a imagem
+        return processamentoService.processarEAnalisarImagem(imagemRadar, deformacao);
     }
 }
+
+
 

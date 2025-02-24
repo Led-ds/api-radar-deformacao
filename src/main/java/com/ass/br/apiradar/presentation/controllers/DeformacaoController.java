@@ -1,7 +1,7 @@
 package com.ass.br.apiradar.presentation.controllers;
 
 import com.ass.br.apiradar.application.usecases.ProcessarImagemSAR;
-import com.ass.br.apiradar.domain.services.RegistrarDeformacao;
+import com.ass.br.apiradar.domain.services.DeformacaoService;
 import com.ass.br.apiradar.presentation.dto.DeformacaoRequestDto;
 import com.ass.br.apiradar.presentation.dto.DeformacaoResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -16,18 +16,18 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DeformacaoController {
 
-    private final RegistrarDeformacao registrarDeformacao;
+    private final DeformacaoService deformacaoService;
     private final ProcessarImagemSAR processarImagemSAR;
 
     @PostMapping("/deformacao")
     public ResponseEntity<DeformacaoResponseDto> criar(@RequestBody DeformacaoRequestDto request) throws IOException {
-        DeformacaoResponseDto response = registrarDeformacao.registrar(request);
+        DeformacaoResponseDto response = deformacaoService.registrarDeformacao(request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/deformacoes")
     public ResponseEntity<List<DeformacaoResponseDto>> listar() {
-        List<DeformacaoResponseDto> respostas = registrarDeformacao.listar();
+        List<DeformacaoResponseDto> respostas = deformacaoService.listarDeformacoes();
         return ResponseEntity.ok(respostas);
     }
 
