@@ -5,11 +5,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.IOException;
 import java.net.URI;
 
 @Service
@@ -27,6 +31,8 @@ public class StorageService {
 
     @Value("${aws.s3.secret-key}")
     private String secretKey;
+
+    private final S3Client s3Client;
 
     private S3Client getS3Client() {
         return S3Client.builder()
@@ -50,5 +56,20 @@ public class StorageService {
 
         // Retorna a URL pública do arquivo
         return "https://" + bucketName + ".s3." + region + ".amazonaws.com/" + filePath;
+    }
+
+    public byte[] downloadFile(String nomeImagem) {
+        String bucketName = "radar-imagesbucket";
+
+        GetObjectRequest request = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key("imagens/deformacao-36/" + nomeImagem)
+                .build();
+
+        try (ResponseInputStream<GetObjectResponse> s3Object = s3Client.getObject(request)) {
+            return s3Object.readAllBytes();
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao baixar a imagem do S3", e);
+        }
     }
 }
