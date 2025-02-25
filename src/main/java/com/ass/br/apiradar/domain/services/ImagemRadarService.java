@@ -18,28 +18,31 @@ public class ImagemRadarService {
 
     private final ImagemRadarRepository imagemRadarRepository;
     private final ImageService imageService;
+    private final StorageService storageService;
 
-    public byte[] baixarImagem(String url) throws IOException {
+    public byte[] baixarImagem(final String url) throws IOException {
         return imageService.imageBufferize(url);
     }
 
-    public Optional<byte[]> baixarImagem(Long imagemId) {
+    public Optional<byte[]> baixarImagem(final Long imagemId) {
         return imagemRadarRepository.findById(imagemId)
                 .map(ImagemRadar::getDadosBrutos);
     }
 
-    public ImagemRadar salvarImagem(byte[] dados, String origem, Deformacao deformacao) {
+    public ImagemRadar salvarImagem(final byte[] dados, final String origem, final Deformacao deformacao) {
         ImagemRadar imagem = ImagemRadar.builder()
                 .origem(origem)
                 .dataColeta(LocalDate.now())
                 .dadosBrutos(dados)
                 .processada(origem.equals("FASTAPI"))
+                .urlImagem(gerarURLImagemS3(deformacao, dados, origem))
                 .deformacao(deformacao)
                 .build();
+
         return imagemRadarRepository.save(imagem);
     }
 
-    public List<ImagemRadarResponseDto> buscarImagensPorDeformacao(Long deformacaoId) {
+    public List<ImagemRadarResponseDto> buscarImagensPorDeformacao(final Long deformacaoId) {
         List<ImagemRadar> imagens = imagemRadarRepository.findByDeformacaoId(deformacaoId);
 
         return imagens.stream()
@@ -50,6 +53,20 @@ public class ImagemRadarService {
                         .processada(imagem.isProcessada())
                         .build())
                 .toList();
+    }
+
+    public List<String> buscarURLImagensNoS3(Long deformacaoId) {
+        return imagemRadarRepository.findByDeformacaoId(deformacaoId)
+                .stream()
+                .map(ImagemRadar::getUrlImagem)
+                .toList();
+    }
+
+    private String gerarURLImagemS3(final Deformacao deformacao, final byte[] dados, final String origem) {
+        String nomeArquivo = "imagens/deformacao-" + deformacao.getId() +
+                (origem.equals("NASA") ? "/nasa_original.png" : "/fastapi_processada.png");
+
+        return storageService.uploadFile(nomeArquivo, dados); // Envia para o S3
     }
 }
 

@@ -1,5 +1,6 @@
 package com.ass.br.apiradar.presentation.controllers;
 
+import com.ass.br.apiradar.domain.model.ImagemRadar;
 import com.ass.br.apiradar.domain.services.ImagemRadarService;
 import com.ass.br.apiradar.presentation.dto.ImagemRadarResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -31,5 +32,12 @@ public class ImagemRadarController {
                 .map(imagem -> ResponseEntity.ok().contentType(MediaType.IMAGE_PNG).body(imagem))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/s3/{deformacaoId}")
+    public ResponseEntity<List<String>> buscarUrlS3(@PathVariable Long deformacaoId) {
+        List<String> urls = imagemRadarService.buscarURLImagensNoS3(deformacaoId);
+        return ResponseEntity.ok(urls);
+    }
+
 }
 

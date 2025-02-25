@@ -23,7 +23,10 @@ public class ImagemRadar {
     private LocalDate dataColeta;
 
     @Lob // Para armazenar imagens como byte[]
+    @Column(columnDefinition = "oid")
     private byte[] dadosBrutos;
+
+    private String urlImagem; // URL da imagem no armazenamento externo
 
     private boolean processada;
 
