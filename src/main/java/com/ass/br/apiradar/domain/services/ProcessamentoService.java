@@ -33,8 +33,11 @@ public class ProcessamentoService {
             ImagemRadar imagemProcessadaEntity = imagemRadarService.salvarImagem(imagemProcessada, "FASTAPI", deformacao);
 
             // Enviar para FastAPI
-            MultipartFile multipartFile = imageService.imageToMultipartFile(imagemProcessada, imagemRadar.getId().toString());
-            Response result = clientPy.analyze(multipartFile);
+            MultipartFile multipartFile = imageService.imageToMultipartFile(imagemProcessada, "fastapi_processada.png");
+
+            System.out.println("Nome do arquivo enviado: " + multipartFile.getOriginalFilename());
+
+            Response result = clientPy.analyze(multipartFile, true, 64);
 
             String classificacao = "Instável";
             double confianca = 0.0;
