@@ -63,7 +63,7 @@ public class StorageService {
 
         GetObjectRequest request = GetObjectRequest.builder()
                 .bucket(bucketName)
-                .key("imagens/deformacao-59/" + nomeImagem)
+                .key("imagens/deformacao-68/" + nomeImagem)
                 .build();
 
         CompletableFuture<byte[]> future = s3Client.getObject(request, AsyncResponseTransformer.toBytes())

@@ -3,8 +3,13 @@ package com.ass.br.apiradar.infrastructure.component;
 import com.ass.br.apiradar.domain.model.Deformacao;
 import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.processing.CoverageProcessor;
+import org.geotools.coverage.processing.Operations;
+import org.geotools.gce.geotiff.GeoTiffFormat;
+import org.geotools.gce.geotiff.GeoTiffWriteParams;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.ReferencingFactoryFinder;
+import org.opengis.parameter.GeneralParameterValue;
+import org.opengis.parameter.ParameterValue;
 import org.opengis.parameter.ParameterValueGroup;
 import org.opengis.referencing.FactoryException;
 import org.springframework.stereotype.Component;
@@ -14,8 +19,13 @@ import org.geotools.gce.geotiff.GeoTiffWriter;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.spi.ImageWriterSpi;
+import javax.imageio.stream.ImageOutputStream;
 import javax.media.jai.JAI;
 import javax.imageio.ImageIO;
+import javax.media.jai.KernelJAI;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.awt.image.renderable.ParameterBlock;
@@ -29,6 +39,8 @@ public class GeoToolsProcessor {
     public byte[] processar(byte[] imagemBruta, Deformacao deformacao) throws IOException, FactoryException {
         // Ler a imagem bruta como GeoTIFF
         GridCoverage2D cobertura = lerImagemGeoTIFF(imagemBruta, deformacao);
+
+        cobertura = (GridCoverage2D) Operations.DEFAULT.scale(cobertura, 1.0, 1.0, 0.0, 0.0);
 
         // Aplicar correção geométrica (reprojeção para EPSG:4326)
         cobertura = corrigirProjecao(cobertura);
@@ -76,15 +88,21 @@ public class GeoToolsProcessor {
     }
 
     private GridCoverage2D aplicarFiltroSuavizacao(GridCoverage2D cobertura) {
-        float sigma = 5.0f;
+        float[] kernelMatrix = {
+                1f/16, 2f/16, 1f/16,
+                2f/16, 4f/16, 2f/16,
+                1f/16, 2f/16, 1f/16
+        };
+
+        KernelJAI kernel = new KernelJAI(3, 3, kernelMatrix);
         ParameterBlock pb = new ParameterBlock();
         pb.addSource(cobertura.getRenderedImage());
-        pb.add(sigma);
+        pb.add(kernel);
 
         RenderedImage processedImage = null;
 
         try{
-            processedImage = JAI.create("Log", pb); //, Exp, Scale, Multiply, Convolve, MultiplyConst, DivideByConst.
+            processedImage = JAI.create("Convolve", pb); //, Exp, Scale, Multiply, Convolve, MultiplyConst, DivideByConst.
         }catch (IllegalArgumentException e){
             try {
                 processedImage = JAI.create("Exp", pb);
@@ -96,7 +114,7 @@ public class GeoToolsProcessor {
                         processedImage = JAI.create("Multiply", pb);
                     }catch (IllegalArgumentException ex3){
                         try {
-                            processedImage = JAI.create("Convolve", pb);
+                            processedImage = JAI.create("log", pb);
                         }catch (IllegalArgumentException ex4){
                             try {
                                 processedImage = JAI.create("MultiplyConst", pb);
@@ -123,6 +141,11 @@ public class GeoToolsProcessor {
     private byte[] salvarImagemGeoTIFF(GridCoverage2D cobertura) throws IOException {
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             GeoTiffWriter writer = new GeoTiffWriter(outputStream);
+
+            GeoTiffWriteParams writeParams = new GeoTiffWriteParams();
+            writeParams.setCompressionMode(GeoTiffWriteParams.MODE_DEFAULT);
+            writeParams.setCompressionType("LZW");
+
             writer.write(cobertura, null);
             writer.dispose();
 

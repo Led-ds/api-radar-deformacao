@@ -35,14 +35,16 @@ public class AnaliseService {
 
     @Transactional
     public Deformacao salvarDeformacao(Deformacao deformacao) throws IOException {
-        deformacao = deformacaoRepository.save(deformacao); // Garante que tem um ID no banco
-        String risco = avaliarRisco(deformacao);
-        deformacao.setRisco(risco);
+        deformacaoRepository.save(deformacao);
+
+        deformacao.setRisco(avaliarRisco(deformacao));
+
         return deformacaoRepository.save(deformacao); // Atualiza o risco
     }
 
     private String avaliarRisco(Deformacao deformacao) throws IOException {
         Map<String, Object> resposta = nasaClient.getEarthImage(deformacao.getLongitude(), deformacao.getLatitude(), apiKey);
+
         NasaImageResponse nasaImage = objectMapper.convertValue(resposta, NasaImageResponse.class);
 
         if (Objects.isNull(nasaImage.getUrl())) {
