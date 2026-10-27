@@ -1,0 +1,724 @@
+{
+  "openapi_version": "3.0.4",
+  "info": {
+    "title": "hyp3-api",
+    "version": "10.18.1"
+  },
+  "paths": {
+    "/jobs": {
+      "post": {
+        "summary": null,
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "description": "List for new jobs to submit for processing.",
+                "type": "object",
+                "required": [
+                  "jobs"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "validate_only": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "jobs": {
+                    "description": "Contains a list of new job objects.",
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 200,
+                    "items": {
+                      "oneOf": [
+                        {
+                          "description": "Contains user provided information on running a new AUTORIFT job.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "job_type",
+                            "job_parameters"
+                          ],
+                          "properties": {
+                            "job_type": {
+                              "type": "string",
+                              "enum": [
+                                "AUTORIFT"
+                              ]
+                            },
+                            "name": {
+                              "description": "User provided text to name the job",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "example": "Job Name"
+                            },
+                            "bucket": {
+                              "description": "User provided text to define the product bucket, null for default",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 3,
+                              "maxLength": 63,
+                              "example": "my-example-bucket",
+                              "pattern": "(?!(^((2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2}).){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2})$|^xn--|.+-s3alias$))^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+                            },
+                            "bucket_prefix": {
+                              "description": "User provided text to define the bucket prefix to place the product in",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 1,
+                              "maxLength": 700,
+                              "example": "{job_id}",
+                              "pattern": "^(?!/)(?!.*//)(?:[A-Za-z0-9._/-]|{job_id}|{name}){1,700}$"
+                            },
+                            "job_parameters": {
+                              "description": "Parameters for running AUTORIFT jobs",
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "granules"
+                              ],
+                              "properties": {
+                                "granules": {
+                                  "type": "array",
+                                  "minItems": 2,
+                                  "maxItems": 2,
+                                  "example": [
+                                    "S2B_MSIL1C_20200105T152259_N0208_R039_T13CES_20200105T181230",
+                                    "S2B_MSIL1C_20200315T152259_N0209_R039_T13CES_20200315T181115"
+                                  ],
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "description": "The name of the Sentinel-1 SLC granule to process",
+                                        "type": "string",
+                                        "pattern": "^S1[ABCD]_IW_SLC__1S[SD][VH]",
+                                        "minLength": 67,
+                                        "maxLength": 67,
+                                        "example": "S1A_IW_SLC__1SSV_20150621T120220_20150621T120232_006471_008934_72D8"
+                                      },
+                                      {
+                                        "description": "The name of the Sentinel-2 granule to process (ESA naming convention)",
+                                        "type": "string",
+                                        "pattern": "^S2[ABCD]_MSIL1C_",
+                                        "minLength": 60,
+                                        "maxLength": 60,
+                                        "example": "S2A_MSIL1C_20200627T150921_N0209_R025_T22WEB_20200627T170912"
+                                      },
+                                      {
+                                        "description": "The name of the Landsat 4, 5, 7, 8 or 9 Collection 2 granule to process",
+                                        "type": "string",
+                                        "pattern": "^L([CO]0[89]|E07|T0[45])_L1",
+                                        "minLength": 40,
+                                        "maxLength": 40,
+                                        "example": "LC08_L1GT_118112_20210107_20210107_02_T2"
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "description": "Contains user provided information on running a new INSAR_GAMMA job.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "job_type",
+                            "job_parameters"
+                          ],
+                          "properties": {
+                            "job_type": {
+                              "type": "string",
+                              "enum": [
+                                "INSAR_GAMMA"
+                              ]
+                            },
+                            "name": {
+                              "description": "User provided text to name the job",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "example": "Job Name"
+                            },
+                            "bucket": {
+                              "description": "User provided text to define the product bucket, null for default",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 3,
+                              "maxLength": 63,
+                              "example": "my-example-bucket",
+                              "pattern": "(?!(^((2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2}).){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2})$|^xn--|.+-s3alias$))^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+                            },
+                            "bucket_prefix": {
+                              "description": "User provided text to define the bucket prefix to place the product in",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 1,
+                              "maxLength": 700,
+                              "example": "{job_id}",
+                              "pattern": "^(?!/)(?!.*//)(?:[A-Za-z0-9._/-]|{job_id}|{name}){1,700}$"
+                            },
+                            "job_parameters": {
+                              "description": "Parameters for running INSAR_GAMMA jobs",
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "granules"
+                              ],
+                              "properties": {
+                                "granules": {
+                                  "type": "array",
+                                  "minItems": 2,
+                                  "maxItems": 2,
+                                  "example": [
+                                    "S1A_IW_SLC__1SSV_20150621T120220_20150621T120232_006471_008934_72D8",
+                                    "S1A_IW_SLC__1SSV_20150504T120217_20150504T120229_005771_00769E_EF9A"
+                                  ],
+                                  "items": {
+                                    "description": "The name of the Sentinel-1 SLC granule to process",
+                                    "type": "string",
+                                    "pattern": "^S1[ABCD]_IW_SLC__1S[SD][VH]",
+                                    "minLength": 67,
+                                    "maxLength": 67,
+                                    "example": "S1A_IW_SLC__1SSV_20150621T120220_20150621T120232_006471_008934_72D8"
+                                  }
+                                },
+                                "include_look_vectors": {
+                                  "description": "Include the look vector theta and phi files in the product package",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_los_displacement": {
+                                  "description": "Include a GeoTIFF in the product package containing displacement values along the Line-Of-Sight (LOS)",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_displacement_maps": {
+                                  "description": "Include displacement maps (line-of-sight and vertical) in the product package",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_inc_map": {
+                                  "description": "Include the incidence angle map(s) in the product package",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_dem": {
+                                  "description": "Include the DEM file in the product package",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_wrapped_phase": {
+                                  "description": "Include the wrapped phase GeoTIFF in the product package",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "apply_water_mask": {
+                                  "description": "Sets pixels over coastal and large inland waterbodies as invalid for phase unwrapping.",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "looks": {
+                                  "description": "Number of looks to take in range and azimuth",
+                                  "type": "string",
+                                  "default": "20x4",
+                                  "enum": [
+                                    "20x4",
+                                    "10x2"
+                                  ]
+                                },
+                                "phase_filter_parameter": {
+                                  "description": "Adaptive phase filter parameter. Useful values fall in the range 0.2 to 1. Larger values result in stronger filtering. If zero, adaptive phase filter will be skipped.",
+                                  "type": "number",
+                                  "minimum": 0.0,
+                                  "maximum": 1.0,
+                                  "default": 0.6
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "description": "Contains user provided information on running a new RTC_GAMMA job.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "job_type",
+                            "job_parameters"
+                          ],
+                          "properties": {
+                            "job_type": {
+                              "type": "string",
+                              "enum": [
+                                "RTC_GAMMA"
+                              ]
+                            },
+                            "name": {
+                              "description": "User provided text to name the job",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "example": "Job Name"
+                            },
+                            "bucket": {
+                              "description": "User provided text to define the product bucket, null for default",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 3,
+                              "maxLength": 63,
+                              "example": "my-example-bucket",
+                              "pattern": "(?!(^((2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2}).){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2})$|^xn--|.+-s3alias$))^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+                            },
+                            "bucket_prefix": {
+                              "description": "User provided text to define the bucket prefix to place the product in",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 1,
+                              "maxLength": 700,
+                              "example": "{job_id}",
+                              "pattern": "^(?!/)(?!.*//)(?:[A-Za-z0-9._/-]|{job_id}|{name}){1,700}$"
+                            },
+                            "job_parameters": {
+                              "description": "Parameters for running RTC_GAMMA jobs",
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "granules"
+                              ],
+                              "properties": {
+                                "granules": {
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "maxItems": 1,
+                                  "example": [
+                                    "S1A_IW_SLC__1SSV_20150621T120220_20150621T120232_006471_008934_72D8"
+                                  ],
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "description": "The name of the Sentinel-1 GRDH granule to process",
+                                        "type": "string",
+                                        "pattern": "^S1[ABCD]_IW_GRDH_1S[SD][VH]",
+                                        "minLength": 67,
+                                        "maxLength": 67,
+                                        "example": "S1B_IW_GRDH_1SDV_20211013T183321_20211013T183346_029121_037995_5B38"
+                                      },
+                                      {
+                                        "description": "The name of the Sentinel-1 SLC granule to process",
+                                        "type": "string",
+                                        "pattern": "^S1[ABCD]_IW_SLC__1S[SD][VH]",
+                                        "minLength": 67,
+                                        "maxLength": 67,
+                                        "example": "S1A_IW_SLC__1SSV_20150621T120220_20150621T120232_006471_008934_72D8"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "resolution": {
+                                  "default": 30.0,
+                                  "description": "Desired output pixel spacing in meters",
+                                  "type": "number",
+                                  "enum": [
+                                    30.0,
+                                    20.0,
+                                    10.0
+                                  ]
+                                },
+                                "dem_name": {
+                                  "default": "copernicus",
+                                  "description": "Name of the DEM to use for processing. `copernicus` will use the Copernicus GLO-30 Public DEM.",
+                                  "type": "string",
+                                  "enum": [
+                                    "copernicus"
+                                  ]
+                                },
+                                "radiometry": {
+                                  "default": "gamma0",
+                                  "description": "Backscatter coefficient normalization, either by ground area (sigma0) or illuminated area projected into the look direction (gamma0)",
+                                  "type": "string",
+                                  "enum": [
+                                    "gamma0",
+                                    "sigma0"
+                                  ]
+                                },
+                                "scale": {
+                                  "default": "power",
+                                  "description": "Scale of output image; power, decibel or amplitude",
+                                  "type": "string",
+                                  "enum": [
+                                    "power",
+                                    "decibel",
+                                    "amplitude"
+                                  ]
+                                },
+                                "speckle_filter": {
+                                  "description": "Apply an Enhanced Lee speckle filter",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "dem_matching": {
+                                  "description": "Coregisters SAR data to the DEM, rather than using dead reckoning based on orbit files",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_dem": {
+                                  "description": "Include the DEM file in the product package",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_inc_map": {
+                                  "description": "Include the incidence angle map(s) in the product package",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_scattering_area": {
+                                  "description": "Include the scattering area in the product package",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "include_rgb": {
+                                  "description": "Include a false-color RGB decomposition in the product package for dual-pol granules (ignored for single-pol granules)",
+                                  "default": false,
+                                  "type": "boolean"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "description": "Contains user provided information on running a new INSAR_ISCE_BURST job.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "job_type",
+                            "job_parameters"
+                          ],
+                          "properties": {
+                            "job_type": {
+                              "type": "string",
+                              "enum": [
+                                "INSAR_ISCE_BURST"
+                              ]
+                            },
+                            "name": {
+                              "description": "User provided text to name the job",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "example": "Job Name"
+                            },
+                            "bucket": {
+                              "description": "User provided text to define the product bucket, null for default",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 3,
+                              "maxLength": 63,
+                              "example": "my-example-bucket",
+                              "pattern": "(?!(^((2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2}).){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2})$|^xn--|.+-s3alias$))^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+                            },
+                            "bucket_prefix": {
+                              "description": "User provided text to define the bucket prefix to place the product in",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 1,
+                              "maxLength": 700,
+                              "example": "{job_id}",
+                              "pattern": "^(?!/)(?!.*//)(?:[A-Za-z0-9._/-]|{job_id}|{name}){1,700}$"
+                            },
+                            "job_parameters": {
+                              "description": "Parameters for running INSAR_ISCE_BURST jobs",
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "granules"
+                              ],
+                              "properties": {
+                                "granules": {
+                                  "type": "array",
+                                  "minItems": 2,
+                                  "maxItems": 2,
+                                  "example": [
+                                    "S1_136231_IW2_20200604T022312_VV_7C85-BURST",
+                                    "S1_136231_IW2_20200616T022313_VV_5D11-BURST"
+                                  ],
+                                  "items": {
+                                    "description": "Name of the Sentinel-1 SLC IW burst granule to process",
+                                    "type": "string",
+                                    "pattern": "^S1_\\d{6}_IW.*-BURST",
+                                    "minLength": 43,
+                                    "maxLength": 43,
+                                    "example": "S1_136231_IW2_20200604T022312_VV_7C85-BURST"
+                                  }
+                                },
+                                "apply_water_mask": {
+                                  "description": "Sets pixels over coastal and large inland waterbodies as invalid for phase unwrapping.",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "looks": {
+                                  "description": "Number of looks to take in range and azimuth",
+                                  "type": "string",
+                                  "default": "20x4",
+                                  "enum": [
+                                    "20x4",
+                                    "10x2",
+                                    "5x1"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "description": "Contains user provided information on running a new INSAR_ISCE_MULTI_BURST job.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "job_type",
+                            "job_parameters"
+                          ],
+                          "properties": {
+                            "job_type": {
+                              "type": "string",
+                              "enum": [
+                                "INSAR_ISCE_MULTI_BURST"
+                              ]
+                            },
+                            "name": {
+                              "description": "User provided text to name the job",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "example": "Job Name"
+                            },
+                            "bucket": {
+                              "description": "User provided text to define the product bucket, null for default",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 3,
+                              "maxLength": 63,
+                              "example": "my-example-bucket",
+                              "pattern": "(?!(^((2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2}).){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2})$|^xn--|.+-s3alias$))^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+                            },
+                            "bucket_prefix": {
+                              "description": "User provided text to define the bucket prefix to place the product in",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 1,
+                              "maxLength": 700,
+                              "example": "{job_id}",
+                              "pattern": "^(?!/)(?!.*//)(?:[A-Za-z0-9._/-]|{job_id}|{name}){1,700}$"
+                            },
+                            "job_parameters": {
+                              "description": "Parameters for running INSAR_ISCE_MULTI_BURST jobs",
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "reference",
+                                "secondary"
+                              ],
+                              "properties": {
+                                "reference": {
+                                  "type": "array",
+                                  "example": [
+                                    "S1_136231_IW2_20200604T022312_VV_7C85-BURST",
+                                    "S1_136232_IW2_20200604T022315_VV_7C85-BURST"
+                                  ],
+                                  "items": {
+                                    "description": "Name of the reference Sentinel-1 SLC IW burst granule to process",
+                                    "type": "string",
+                                    "pattern": "^S1_\\d{6}_IW\\d_\\d{8}T\\d{6}_[VH]{2}_([\\dA-F]){4}-BURST$",
+                                    "minLength": 43,
+                                    "maxLength": 43,
+                                    "example": "S1_136231_IW2_20200604T022312_VV_7C85-BURST"
+                                  }
+                                },
+                                "secondary": {
+                                  "type": "array",
+                                  "example": [
+                                    "S1_136231_IW2_20200616T022313_VV_5D11-BURST",
+                                    "S1_136232_IW2_20200616T022316_VV_5D11-BURST"
+                                  ],
+                                  "items": {
+                                    "description": "Name of the secondary Sentinel-1 SLC IW burst granule to process",
+                                    "type": "string",
+                                    "pattern": "^S1_\\d{6}_IW\\d_\\d{8}T\\d{6}_[VH]{2}_([\\dA-F]){4}-BURST$",
+                                    "minLength": 43,
+                                    "maxLength": 43,
+                                    "example": "S1_136231_IW2_20200616T022313_VV_5D11-BURST"
+                                  }
+                                },
+                                "apply_water_mask": {
+                                  "description": "Sets pixels over coastal and large inland waterbodies as invalid for phase unwrapping.",
+                                  "default": false,
+                                  "type": "boolean"
+                                },
+                                "looks": {
+                                  "description": "Number of looks to take in range and azimuth",
+                                  "type": "string",
+                                  "default": "20x4",
+                                  "enum": [
+                                    "20x4",
+                                    "10x2",
+                                    "5x1"
+                                  ]
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "description": "Contains user provided information on running a new ARIA_S1_GUNW job.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "job_type",
+                            "job_parameters"
+                          ],
+                          "properties": {
+                            "job_type": {
+                              "type": "string",
+                              "enum": [
+                                "ARIA_S1_GUNW"
+                              ]
+                            },
+                            "name": {
+                              "description": "User provided text to name the job",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "example": "Job Name"
+                            },
+                            "bucket": {
+                              "description": "User provided text to define the product bucket, null for default",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 3,
+                              "maxLength": 63,
+                              "example": "my-example-bucket",
+                              "pattern": "(?!(^((2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2}).){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2})$|^xn--|.+-s3alias$))^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+                            },
+                            "bucket_prefix": {
+                              "description": "User provided text to define the bucket prefix to place the product in",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 1,
+                              "maxLength": 700,
+                              "example": "{job_id}",
+                              "pattern": "^(?!/)(?!.*//)(?:[A-Za-z0-9._/-]|{job_id}|{name}){1,700}$"
+                            },
+                            "job_parameters": {
+                              "description": "Parameters for running ARIA_S1_GUNW jobs",
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "reference_date",
+                                "secondary_date",
+                                "frame_id"
+                              ],
+                              "properties": {
+                                "reference_date": {
+                                  "description": "The date to find Sentinel-1 SLC granules to use as reference scenes for InSAR processing",
+                                  "type": "string",
+                                  "format": "date",
+                                  "example": "2019-12-31"
+                                },
+                                "secondary_date": {
+                                  "description": "The date to find Sentinel-1 SLC granules to use as secondary scenes for InSAR processing",
+                                  "type": "string",
+                                  "format": "date",
+                                  "example": "2018-12-12"
+                                },
+                                "frame_id": {
+                                  "description": "Subset GUNW products to this frame.",
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 27397,
+                                  "example": 11040
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "description": "Contains user provided information on running a new OPERA_DISP_TMS job.",
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "job_type",
+                            "job_parameters"
+                          ],
+                          "properties": {
+                            "job_type": {
+                              "type": "string",
+                              "enum": [
+                                "OPERA_DISP_TMS"
+                              ]
+                            },
+                            "name": {
+                              "description": "User provided text to name the job",
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 100,
+                              "example": "Job Name"
+                            },
+                            "bucket": {
+                              "description": "User provided text to define the product bucket, null for default",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 3,
+                              "maxLength": 63,
+                              "example": "my-example-bucket",
+                              "pattern": "(?!(^((2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2}).){3}(2(5[0-5]|[0-4][0-9])|[01]?[0-9]{1,2})$|^xn--|.+-s3alias$))^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$"
+                            },
+                            "bucket_prefix": {
+                              "description": "User provided text to define the bucket prefix to place the product in",
+                              "type": "string",
+                              "nullable": true,
+                              "minLength": 1,
+                              "maxLength": 700,
+                              "example": "{job_id}",
+                              "pattern": "^(?!/)(?!.*//)(?:[A-Za-z0-9._/-]|{job_id}|{name}){1,700}$"
+                            },
+                            "job_parameters": {
+                              "description": "Parameters for running OPERA_DISP_TMS jobs",
+                              "type": "object",
+                              "additionalProperties": false,
+                              "required": [
+                                "frame_ids"
+                              ],
+                              "properties": {
+                                "frame_ids": {
+                                  "description": "List of frame IDs to include in mosaic",
+                                  "type": "array",
+                                  "minItems": 1,
+                                  "example": [
+                                    11115,
+                                    11116
+                                  ],
+                                  "items": {
+                                    "description": "Frame ID",
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 46986,
+                                    "example": 11115
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        }
+      }
+    }
+  }
+}

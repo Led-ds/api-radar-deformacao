@@ -1,0 +1,131 @@
+spring:
+  application:
+    name: radar-plus-plus-api
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+radar:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+  territory:
+    max-allowed-area-km2: ${RADAR_TERRITORY_MAX_ALLOWED_AREA_KM2:250.0}
+  catalog:
+    asf-base-url: ${ASF_BASE_URL:https://api.daac.asf.alaska.edu}
+    connect-timeout-ms: 5000
+    read-timeout-ms: 12000
+    mock-enabled: false
+  security:
+    allow-demo-tenant: false
+    demo-tenant-id: d3b07384-d113-40a2-9721-a53b2169b821
+
+---
+# ==============================================================================
+# PERFIL DE DESENVOLVIMENTO (DEV)
+# ==============================================================================
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/radar_db}
+    username: ${SPRING_DATASOURCE_USERNAME:radar_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:radar_pass}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: radar
+  flyway:
+    enabled: true
+    schemas: radar
+    default-schema: radar
+    baseline-on-migrate: true
+
+radar:
+  security:
+    allow-demo-tenant: true
+  catalog:
+    mock-enabled: false
+
+---
+# ==============================================================================
+# PERFIL DE TESTE (TEST)
+# ==============================================================================
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:radar_test_db;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;INIT=CREATE SCHEMA IF NOT EXISTS radar
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+  flyway:
+    enabled: false
+
+radar:
+  security:
+    allow-demo-tenant: true
+  catalog:
+    mock-enabled: true
+
+---
+# ==============================================================================
+# PERFIL DE PRODUÇÃO (PROD)
+# ==============================================================================
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        default_schema: radar
+  flyway:
+    enabled: true
+    schemas: radar
+    default-schema: radar
+    baseline-on-migrate: false
+
+radar:
+  security:
+    allow-demo-tenant: false
+  catalog:
+    mock-enabled: false

@@ -31,3 +31,19 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Environment variables & local secrets
+.env
+.env*.local
+application-local.properties
+application-local.yml
+
+# Logs
+*.log
+logs/
+
+# OS files & temp files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
