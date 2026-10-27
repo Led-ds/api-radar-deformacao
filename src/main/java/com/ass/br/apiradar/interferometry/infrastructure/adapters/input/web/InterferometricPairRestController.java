@@ -62,6 +62,19 @@ public class InterferometricPairRestController {
     }
 
     /**
+     * Retorna as opções dinâmicas de preparação do par: bursts candidatos correspondentes
+     * para as duas datas, coberturas nominais da AOI, créditos e pendências.
+     */
+    @GetMapping("/pairs/{pairId}/processing/options")
+    public ResponseEntity<com.ass.br.apiradar.interferometry.application.dto.InSarProcessingOptionsResponseDto> getProcessingOptions(
+            @PathVariable("pairId") String pairId,
+            @RequestParam("aoiId") String aoiId
+    ) {
+        var options = processingPreparationService.getProcessingOptions(pairId, aoiId);
+        return ResponseEntity.ok(options);
+    }
+
+    /**
      * Retorna as modalidades de processamento InSAR suportadas oficialmente pela esteira científica.
      */
     @GetMapping("/processing/modalities")

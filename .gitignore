@@ -47,3 +47,7 @@ logs/
 Thumbs.db
 *.swp
 *.swo
+
+# Capturas e evidências visuais E2E (restrito ao diretório de homologação)
+src/test/resources/e2e-evidence/*.png
+.e2e_tracked_uuids.json

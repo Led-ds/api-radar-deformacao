@@ -36,6 +36,14 @@ public class AreaOfInterestPersistenceAdapter implements AreaOfInterestRepositor
     @Override
     public AreaOfInterest save(AreaOfInterest aoi) {
         AreaOfInterestJpaEntity entity = toEntity(aoi);
+        try {
+            Double postGisArea = jpaRepository.calculateGeodesicAreaKm2FromWkt(aoi.getGeometry().wkt());
+            if (postGisArea != null && postGisArea > 0) {
+                entity.setMetricAreaKm2(BigDecimal.valueOf(postGisArea));
+            }
+        } catch (Exception e) {
+            // Se o PostGIS não estiver acessível de forma direta, preserva a aproximação calculada pelo domínio
+        }
         AreaOfInterestJpaEntity saved = jpaRepository.save(entity);
         return toDomain(saved);
     }

@@ -457,4 +457,62 @@ class Hyp3InSarProcessorAdapterTest {
         assertEquals(10, ProcessingModality.FULL_SCENE.calculateOfficialCredits(1, "20x4"));
         assertEquals(15, ProcessingModality.FULL_SCENE.calculateOfficialCredits(1, "10x2"));
     }
+
+    @Test
+    @DisplayName("11. Rejeição obrigatória de combinação de bursts da mesma data de aquisição")
+    void shouldRejectSameDateBurstsInInterferometricPair() {
+        InterferometricPair pair = createEligiblePair();
+        InSarProcessingParameters params = InSarProcessingParameters.defaultForUrbanMaceio();
+
+        // Single-Burst com dois bursts da mesma data (2023-01-04)
+        List<String> sameDateSingle = List.of(canonBurstRef19, canonBurstRef19);
+        IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () ->
+                adapter.buildDryRunRequest("aoi-1", pair, ProcessingModality.BURST_INSAR, sameDateSingle, params, "c1")
+        );
+        assertTrue(ex1.getMessage().contains("Incompatibilidade temporal"));
+
+        // Multi-Burst com pares onde referência e secundária possuem mesma data
+        List<String> sameDateMulti = List.of(
+                canonBurstRef18, canonBurstRef19,
+                canonBurstRef18, canonBurstRef19
+        );
+        IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
+                adapter.buildDryRunRequest("aoi-1", pair, ProcessingModality.MULTI_BURST, sameDateMulti, params, "c2")
+        );
+        assertTrue(ex2.getMessage().contains("Incompatibilidade temporal"));
+    }
+
+    @Test
+    @DisplayName("12. Rejeição de bursts com datas divergentes dentro do mesmo conjunto de referência ou secundário")
+    void shouldRejectMixedDatesWithinReferenceOrSecondarySets() {
+        InterferometricPair pair = createEligiblePair();
+        InSarProcessingParameters params = InSarProcessingParameters.defaultForUrbanMaceio();
+
+        // Conjunto de referência misturando bursts de 20230104 e 20230116
+        List<String> mixedRef = List.of(
+                canonBurstRef18, canonBurstSec19, // ref misturada (04/01 e 16/01)
+                canonBurstSec18, canonBurstRef19  // sec correspondentes (16/01 e 04/01)
+        );
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                adapter.buildDryRunRequest("aoi-1", pair, ProcessingModality.MULTI_BURST, mixedRef, params, "c3")
+        );
+        assertTrue(ex.getMessage().contains("datas divergentes"));
+    }
+
+    @Test
+    @DisplayName("13. Rejeição de bursts duplicados dentro do mesmo conjunto de referência ou secundário")
+    void shouldRejectDuplicateBurstsInMultiBurst() {
+        InterferometricPair pair = createEligiblePair();
+        InSarProcessingParameters params = InSarProcessingParameters.defaultForUrbanMaceio();
+
+        // 2 bursts idênticos na referência
+        List<String> dupRef = List.of(
+                canonBurstRef19, canonBurstRef19,
+                canonBurstSec19, canonBurstSec19
+        );
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                adapter.buildDryRunRequest("aoi-1", pair, ProcessingModality.MULTI_BURST, dupRef, params, "c4")
+        );
+        assertTrue(ex.getMessage().contains("duplicado"));
+    }
 }

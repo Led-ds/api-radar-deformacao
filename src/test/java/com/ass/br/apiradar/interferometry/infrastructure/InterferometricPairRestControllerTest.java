@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -184,5 +185,69 @@ class InterferometricPairRestControllerTest {
                 .andExpect(jsonPath("$.estimatedCredits").value(1))
                 .andExpect(jsonPath("$.dryRun").value(true))
                 .andExpect(jsonPath("$.executionBlockedBySecurityPolicy").value(true));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/interferometry/pairs/{pairId}/processing/options deve retornar 200 OK com opções do par")
+    void shouldReturn200WhenGettingProcessingOptions() throws Exception {
+        String pairId = "S1A_20230104__S1A_20230116";
+        String aoiId = "c0a80101-0000-0000-0000-000000000001";
+
+        var optionsDto = new com.ass.br.apiradar.interferometry.application.dto.InSarProcessingOptionsResponseDto(
+                pairId,
+                aoiId,
+                "Piloto Maceió",
+                10.93,
+                "S1A_20230104",
+                "S1A_20230116",
+                12,
+                -79.0,
+                "READY_FOR_SELECTION",
+                List.of(new com.ass.br.apiradar.interferometry.application.dto.SupportedModalityOptionDto(
+                        com.ass.br.apiradar.interferometry.domain.model.processing.ProcessingModality.BURST_INSAR,
+                        "INSAR_ISCE_BURST",
+                        "hyp3-isce:v1.0",
+                        1,
+                        "Processamento por burst",
+                        100.0
+                )),
+                List.of(new com.ass.br.apiradar.interferometry.application.dto.CandidateBurstPairDto(
+                        18319,
+                        "IW1",
+                        "VV",
+                        "S1_018319_IW1_20230104T080254_VV_604A-BURST",
+                        Instant.now(),
+                        "S1_018319_IW1_20230116T080253_VV_BF75-BURST",
+                        Instant.now(),
+                        100.0,
+                        100.0,
+                        100.0,
+                        10.93,
+                        true
+                )),
+                new com.ass.br.apiradar.interferometry.application.dto.MultiBurstSummaryDto(
+                        true,
+                        List.of("S1_018319_IW1_20230104T080254_VV_604A-BURST"),
+                        List.of("S1_018319_IW1_20230116T080253_VV_BF75-BURST"),
+                        100.0,
+                        10.93,
+                        1
+                ),
+                List.of("Limitações de qualidade não avaliadas"),
+                List.of()
+        );
+
+        Mockito.when(processingPreparationService.getProcessingOptions(eq(pairId), eq(aoiId)))
+                .thenReturn(optionsDto);
+
+        mockMvc.perform(get("/api/v1/interferometry/pairs/" + pairId + "/processing/options")
+                        .param("aoiId", aoiId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pairId").value(pairId))
+                .andExpect(jsonPath("$.aoiId").value(aoiId))
+                .andExpect(jsonPath("$.status").value("READY_FOR_SELECTION"))
+                .andExpect(jsonPath("$.candidateBurstPairs[0].relativeBurstId").value(18319))
+                .andExpect(jsonPath("$.candidateBurstPairs[0].recommended").value(true))
+                .andExpect(jsonPath("$.multiBurstSummary.available").value(true));
     }
 }

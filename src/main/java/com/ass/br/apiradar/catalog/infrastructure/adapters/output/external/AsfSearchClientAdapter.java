@@ -47,6 +47,7 @@ public class AsfSearchClientAdapter implements SarCatalogPort {
             ObjectMapper objectMapper) {
         this.webClient = WebClient.builder()
                 .baseUrl(baseUrl)
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
         this.mockEnabled = mockEnabled;
         this.objectMapper = objectMapper;
@@ -90,7 +91,7 @@ public class AsfSearchClientAdapter implements SarCatalogPort {
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .timeout(Duration.ofSeconds(12))
+                    .timeout(Duration.ofSeconds(20))
                     .block();
 
             return parseAsfGeoJson(responseBody);

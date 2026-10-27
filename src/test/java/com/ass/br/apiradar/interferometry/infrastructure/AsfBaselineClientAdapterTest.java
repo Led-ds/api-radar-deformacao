@@ -88,4 +88,51 @@ class AsfBaselineClientAdapterTest {
         assertFalse(baseline.available());
         assertEquals(BaselineSource.UNAVAILABLE, baseline.source());
     }
+
+    @Test
+    @DisplayName("Processa com sucesso payload de baseline superior ao buffer default de 256KB sem lançar DataBufferLimitException")
+    void shouldHandlePayloadsExceedingDefaultBufferLimit() throws Exception {
+        com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress(0), 0);
+        try {
+            String masterName = "S1A_IW_SLC__1SDV_20230104T080249_20230104T080316_046631_0596C5_604A";
+            String slaveName = "S1A_IW_SLC__1SDV_20230116T080248_20230116T080315_046806_059CA6_BF75";
+
+            // Gera payload JSON com mais de 300KB (excedendo 256KB default do WebClient)
+            StringBuilder sb = new StringBuilder("[[");
+            for (int i = 0; i < 300; i++) {
+                sb.append("{\"granuleName\":\"DUMMY_SCENE_").append(i)
+                        .append("\",\"perpendicularBaseline\":10.0,\"filler\":\"")
+                        .append("x".repeat(1024)) // 1KB cada item
+                        .append("\"},");
+            }
+            sb.append("{\"granuleName\":\"").append(slaveName).append("\",\"perpendicularBaseline\":-79.0}");
+            sb.append("]]");
+            byte[] responseBytes = sb.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            assertTrue(responseBytes.length > 262144, "Payload de teste deve ser > 256KB");
+
+            server.createContext("/services/search/baseline", exchange -> {
+                exchange.getResponseHeaders().set("Content-Type", "application/json");
+                exchange.sendResponseHeaders(200, responseBytes.length);
+                try (java.io.OutputStream os = exchange.getResponseBody()) {
+                    os.write(responseBytes);
+                }
+            });
+            server.start();
+
+            String baseUrl = "http://localhost:" + server.getAddress().getPort();
+            AsfBaselineClientAdapter adapter = new AsfBaselineClientAdapter(baseUrl, false, objectMapper);
+
+            SarScene master = createScene(masterName);
+            SarScene slave = createScene(slaveName);
+
+            BaselineValue baseline = adapter.getPerpendicularBaseline(master, slave);
+
+            assertNotNull(baseline);
+            assertTrue(baseline.available(), "Baseline deve estar disponível quando payload é parseado com sucesso");
+            assertEquals(-79.0, baseline.meters());
+            assertEquals(BaselineSource.ASF_BASELINE_SERVICE, baseline.source());
+        } finally {
+            server.stop(0);
+        }
+    }
 }

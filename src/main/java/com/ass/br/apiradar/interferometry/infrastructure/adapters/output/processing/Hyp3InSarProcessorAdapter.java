@@ -277,6 +277,17 @@ public class Hyp3InSarProcessorAdapter implements InSarProcessorPort {
                     ));
                 }
 
+                // Validação de datas: referência e secundária não podem possuir a mesma data de aquisição
+                java.time.LocalDate refDate = java.time.LocalDate.ofInstant(bRef.acquisitionTime(), java.time.ZoneOffset.UTC);
+                java.time.LocalDate secDate = java.time.LocalDate.ofInstant(bSec.acquisitionTime(), java.time.ZoneOffset.UTC);
+                if (refDate.equals(secDate)) {
+                    throw new IllegalArgumentException(String.format(
+                            "Incompatibilidade temporal: os bursts de referência (%s) e secundário (%s) possuem a mesma data (%s). " +
+                                    "Um par interferométrico exige aquisições em datas distintas.",
+                            bRef.value(), bSec.value(), refDate
+                    ));
+                }
+
                 // Contrato OpenAPI estrito: apenas 'granules', 'looks', 'apply_water_mask' (additionalProperties: false)
                 jobParams.put("granules", List.of(bRef.value(), bSec.value()));
                 jobParams.put("looks", parameters.looks());
@@ -295,6 +306,10 @@ public class Hyp3InSarProcessorAdapter implements InSarProcessorPort {
                 int half = bursts.size() / 2;
                 List<String> refBursts = new ArrayList<>();
                 List<String> secBursts = new ArrayList<>();
+                Set<Integer> seenRefRelIds = new HashSet<>();
+                Set<Integer> seenSecRelIds = new HashSet<>();
+                java.time.LocalDate commonRefDate = null;
+                java.time.LocalDate commonSecDate = null;
 
                 for (int i = 0; i < half; i++) {
                     BurstIdentifier br = BurstIdentifier.of(bursts.get(i));
@@ -305,6 +320,46 @@ public class Hyp3InSarProcessorAdapter implements InSarProcessorPort {
                                 "Incompatibilidade no par multi-burst [%d]: ref=%s vs sec=%s", i, br.value(), bs.value()
                         ));
                     }
+
+                    java.time.LocalDate rDate = java.time.LocalDate.ofInstant(br.acquisitionTime(), java.time.ZoneOffset.UTC);
+                    java.time.LocalDate sDate = java.time.LocalDate.ofInstant(bs.acquisitionTime(), java.time.ZoneOffset.UTC);
+
+                    if (rDate.equals(sDate)) {
+                        throw new IllegalArgumentException(String.format(
+                                "Incompatibilidade temporal no par multi-burst [%d]: referência e secundária possuem a mesma data (%s).",
+                                i, rDate
+                        ));
+                    }
+
+                    if (commonRefDate == null) {
+                        commonRefDate = rDate;
+                    } else if (!commonRefDate.equals(rDate)) {
+                        throw new IllegalArgumentException(String.format(
+                                "Bursts de referência com datas divergentes no conjunto multi-burst: %s vs %s.",
+                                commonRefDate, rDate
+                        ));
+                    }
+
+                    if (commonSecDate == null) {
+                        commonSecDate = sDate;
+                    } else if (!commonSecDate.equals(sDate)) {
+                        throw new IllegalArgumentException(String.format(
+                                "Bursts secundários com datas divergentes no conjunto multi-burst: %s vs %s.",
+                                commonSecDate, sDate
+                        ));
+                    }
+
+                    if (!seenRefRelIds.add(br.relativeBurstId())) {
+                        throw new IllegalArgumentException(String.format(
+                                "Burst de referência duplicado no conjunto multi-burst: relativeBurstId=%d", br.relativeBurstId()
+                        ));
+                    }
+                    if (!seenSecRelIds.add(bs.relativeBurstId())) {
+                        throw new IllegalArgumentException(String.format(
+                                "Burst secundário duplicado no conjunto multi-burst: relativeBurstId=%d", bs.relativeBurstId()
+                        ));
+                    }
+
                     refBursts.add(br.value());
                     secBursts.add(bs.value());
                 }

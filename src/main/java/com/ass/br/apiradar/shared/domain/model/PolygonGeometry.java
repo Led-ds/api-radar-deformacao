@@ -101,7 +101,28 @@ public record PolygonGeometry(String wkt, Polygon jtsPolygon) implements Seriali
             }
 
             LinearRing shell = GF.createLinearRing(coordinates);
-            Polygon polygon = GF.createPolygon(shell, null);
+            LinearRing[] holes = null;
+            if (rings.size() > 1) {
+                holes = new LinearRing[rings.size() - 1];
+                for (int r = 1; r < rings.size(); r++) {
+                    Object holeObj = rings.get(r);
+                    if (!(holeObj instanceof List<?> holeList) || holeList.size() < 4) {
+                        throw new InvalidGeometryException("GeoJSON interior ring (hole) must contain at least 4 coordinates");
+                    }
+                    Coordinate[] holeCoords = new Coordinate[holeList.size()];
+                    for (int i = 0; i < holeList.size(); i++) {
+                        Object ptObj = holeList.get(i);
+                        if (!(ptObj instanceof List<?> ptList) || ptList.size() < 2) {
+                            throw new InvalidGeometryException("Invalid point at index " + i + " in hole ring");
+                        }
+                        double lon = ((Number) ptList.get(0)).doubleValue();
+                        double lat = ((Number) ptList.get(1)).doubleValue();
+                        holeCoords[i] = new Coordinate(lon, lat);
+                    }
+                    holes[r - 1] = GF.createLinearRing(holeCoords);
+                }
+            }
+            Polygon polygon = GF.createPolygon(shell, holes);
             validatePolygon(polygon);
             polygon.setSRID(4326);
 
@@ -177,13 +198,22 @@ public record PolygonGeometry(String wkt, Polygon jtsPolygon) implements Seriali
      * Converte o polígono JTS para uma estrutura GeoJSON nativa (type: Polygon).
      */
     public Map<String, Object> toGeoJson() {
-        List<List<Double>> ringCoords = new ArrayList<>();
+        List<List<List<Double>>> rings = new ArrayList<>();
+        List<List<Double>> shellCoords = new ArrayList<>();
         for (Coordinate c : jtsPolygon.getExteriorRing().getCoordinates()) {
-            ringCoords.add(List.of(c.x, c.y));
+            shellCoords.add(List.of(c.x, c.y));
+        }
+        rings.add(shellCoords);
+        for (int i = 0; i < jtsPolygon.getNumInteriorRing(); i++) {
+            List<List<Double>> holeCoords = new ArrayList<>();
+            for (Coordinate c : jtsPolygon.getInteriorRingN(i).getCoordinates()) {
+                holeCoords.add(List.of(c.x, c.y));
+            }
+            rings.add(holeCoords);
         }
         return Map.of(
                 "type", "Polygon",
-                "coordinates", List.of(ringCoords)
+                "coordinates", rings
         );
     }
 
@@ -196,16 +226,27 @@ public record PolygonGeometry(String wkt, Polygon jtsPolygon) implements Seriali
     }
 
     /**
-     * Calcula a área métrica aproximada em km² considerando a curvatura esferoidal WGS 84.
+     * Calcula a área métrica geodésica em km² considerando a curvatura do elipsoide WGS 84,
+     * compatibilizando a precisão com a função ST_Area(geom::geography) do PostGIS.
      */
     public MetricArea calculateApproximateMetricArea() {
         Envelope env = jtsPolygon.getEnvelopeInternal();
         double midLat = (env.getMinY() + env.getMaxY()) / 2.0;
         double latRad = Math.toRadians(midLat);
+        double sinLat = Math.sin(latRad);
+        double cosLat = Math.cos(latRad);
 
-        // Resolução geodésica em km por grau
-        double kmPerDegreeLat = 111.132;
-        double kmPerDegreeLon = 111.320 * Math.cos(latRad);
+        // Parâmetros do Elipsoide WGS 84 (semi-eixo maior a e excentricidade e²)
+        double a = 6378137.0;
+        double e2 = 0.00669437999014;
+
+        double denom = Math.sqrt(1.0 - e2 * sinLat * sinLat);
+        double m = a * (1.0 - e2) / (denom * denom * denom); // raio de curvatura meridional
+        double n = a / denom; // raio de curvatura normal
+
+        // Comprimento em km de um grau geodésico
+        double kmPerDegreeLat = m * Math.PI / (180.0 * 1000.0);
+        double kmPerDegreeLon = n * cosLat * Math.PI / (180.0 * 1000.0);
 
         double areaDegrees2 = jtsPolygon.getArea();
         double areaKm2 = areaDegrees2 * kmPerDegreeLat * kmPerDegreeLon;
