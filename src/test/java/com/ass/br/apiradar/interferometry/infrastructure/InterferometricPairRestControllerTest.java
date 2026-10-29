@@ -44,8 +44,12 @@ class InterferometricPairRestControllerTest {
     @MockBean
     private com.ass.br.apiradar.interferometry.application.services.InSarProcessingPreparationService processingPreparationService;
 
+    @MockBean
+    private com.ass.br.apiradar.interferometry.application.services.InSarJobOrchestrationService orchestrationService;
+
     @Autowired
     private ObjectMapper objectMapper;
+
 
     @Test
     @DisplayName("POST /api/v1/interferometry/pairs/candidates deve retornar 200 OK com pares avaliados")
@@ -250,4 +254,75 @@ class InterferometricPairRestControllerTest {
                 .andExpect(jsonPath("$.candidateBurstPairs[0].recommended").value(true))
                 .andExpect(jsonPath("$.multiBurstSummary.available").value(true));
     }
+
+    @Test
+    @DisplayName("GET /api/v1/interferometry/pairs/{pairId}/readiness deve retornar 200 OK com parecer de prontidão")
+    void shouldReturnReadinessReport() throws Exception {
+        String pairId = "PAR-01__MACEIO";
+        String aoiId = "1e7a1465-c3d7-44e6-8398-5ced7dac17ec";
+
+        var report = new com.ass.br.apiradar.interferometry.domain.model.job.InSarExecutionReadinessReport(
+                pairId,
+                aoiId,
+                true,
+                false,
+                false,
+                1,
+                "INSAR_ISCE_BURST",
+                "018319",
+                "READY_FOR_SUPERVISED_AUTHORIZATION",
+                List.of("Barreira de segurança financeira ativa"),
+                List.of("AOI validada", "Par elegível")
+        );
+
+        Mockito.when(orchestrationService.checkOperationalReadiness(eq(pairId), eq(aoiId)))
+                .thenReturn(report);
+
+        mockMvc.perform(get("/api/v1/interferometry/pairs/" + pairId + "/readiness")
+                        .param("aoiId", aoiId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pairId").value(pairId))
+                .andExpect(jsonPath("$.aoiId").value(aoiId))
+                .andExpect(jsonPath("$.readinessVerdict").value("READY_FOR_SUPERVISED_AUTHORIZATION"))
+                .andExpect(jsonPath("$.estimatedCredits").value(1))
+                .andExpect(jsonPath("$.officialJobType").value("INSAR_ISCE_BURST"))
+                .andExpect(jsonPath("$.targetBurst").value("018319"));
+    }
+
+    @Test
+    @DisplayName("GET /api/v1/interferometry/jobs/{jobId} deve retornar 200 OK com status do job")
+    void shouldReturnJobStatus() throws Exception {
+        String jobId = "job-uuid-123";
+        var job = new com.ass.br.apiradar.interferometry.domain.model.job.TrackedInSarJob(
+                jobId,
+                "idemp-key-123",
+                "PAR-01__MACEIO",
+                "1e7a1465-c3d7-44e6-8398-5ced7dac17ec",
+                "INSAR_ISCE_BURST",
+                com.ass.br.apiradar.interferometry.domain.model.job.JobStatus.SUCCEEDED,
+                java.time.Instant.now(),
+                null,
+                List.of(new com.ass.br.apiradar.interferometry.domain.model.job.InSarProductFile(
+                        "S1_018319_IW1_corr.tif",
+                        "https://datapool.asf.alaska.edu/corr.tif",
+                        1024L,
+                        "sha256-abc",
+                        "COHERENCE"
+                )),
+                null,
+                null,
+                true,
+                "/data/products/job-123"
+        );
+
+        Mockito.when(orchestrationService.getJobStatus(eq(jobId))).thenReturn(job);
+
+        mockMvc.perform(get("/api/v1/interferometry/jobs/" + jobId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.jobId").value(jobId))
+                .andExpect(jsonPath("$.status").value("SUCCEEDED"))
+                .andExpect(jsonPath("$.downloaded").value(true))
+                .andExpect(jsonPath("$.files[0].fileType").value("COHERENCE"));
+    }
 }
+

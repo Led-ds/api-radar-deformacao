@@ -1,9 +1,13 @@
 package com.ass.br.apiradar.interferometry.infrastructure.adapters.input.web;
 
-import com.ass.br.apiradar.interferometry.application.dto.GeneratePairsRequest;
-import com.ass.br.apiradar.interferometry.application.dto.GeneratePairsResponseDto;
-import com.ass.br.apiradar.interferometry.application.dto.PairSelectionPolicyDto;
+import com.ass.br.apiradar.interferometry.application.dto.*;
+import com.ass.br.apiradar.interferometry.application.services.InSarJobOrchestrationService;
+import com.ass.br.apiradar.interferometry.application.services.InSarProcessingPreparationService;
 import com.ass.br.apiradar.interferometry.application.services.InterferometricPairApplicationService;
+import com.ass.br.apiradar.interferometry.domain.model.job.InSarExecutionReadinessReport;
+import com.ass.br.apiradar.interferometry.domain.model.job.ProductQualityMetrics;
+import com.ass.br.apiradar.interferometry.domain.model.job.TrackedInSarJob;
+import com.ass.br.apiradar.interferometry.domain.model.processing.ProcessingModality;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -11,21 +15,25 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador REST oficial para formação e avaliação preliminar de pares interferométricos InSAR.
+ * Controlador REST oficial para formação e avaliação preliminar de pares interferométricos InSAR,
+ * prontidão operacional e acompanhamento de jobs.
  */
 @RestController
 @RequestMapping("/api/v1/interferometry")
 public class InterferometricPairRestController {
 
     private final InterferometricPairApplicationService pairService;
-    private final com.ass.br.apiradar.interferometry.application.services.InSarProcessingPreparationService processingPreparationService;
+    private final InSarProcessingPreparationService processingPreparationService;
+    private final InSarJobOrchestrationService orchestrationService;
 
     public InterferometricPairRestController(
             InterferometricPairApplicationService pairService,
-            com.ass.br.apiradar.interferometry.application.services.InSarProcessingPreparationService processingPreparationService
+            InSarProcessingPreparationService processingPreparationService,
+            InSarJobOrchestrationService orchestrationService
     ) {
         this.pairService = pairService;
         this.processingPreparationService = processingPreparationService;
+        this.orchestrationService = orchestrationService;
     }
 
     /**
@@ -53,9 +61,9 @@ public class InterferometricPairRestController {
      * sem disparar processamento na nuvem ou consumir créditos.
      */
     @PostMapping("/pairs/{pairId}/processing/dry-run")
-    public ResponseEntity<com.ass.br.apiradar.interferometry.application.dto.InSarProcessingDryRunResponseDto> generateDryRun(
+    public ResponseEntity<InSarProcessingDryRunResponseDto> generateDryRun(
             @PathVariable("pairId") String pairId,
-            @RequestBody com.ass.br.apiradar.interferometry.application.dto.InSarProcessingDryRunRequestDto request
+            @RequestBody InSarProcessingDryRunRequestDto request
     ) {
         var response = processingPreparationService.generateDryRunRequest(pairId, request);
         return ResponseEntity.ok(response);
@@ -66,7 +74,7 @@ public class InterferometricPairRestController {
      * para as duas datas, coberturas nominais da AOI, créditos e pendências.
      */
     @GetMapping("/pairs/{pairId}/processing/options")
-    public ResponseEntity<com.ass.br.apiradar.interferometry.application.dto.InSarProcessingOptionsResponseDto> getProcessingOptions(
+    public ResponseEntity<InSarProcessingOptionsResponseDto> getProcessingOptions(
             @PathVariable("pairId") String pairId,
             @RequestParam("aoiId") String aoiId
     ) {
@@ -78,7 +86,42 @@ public class InterferometricPairRestController {
      * Retorna as modalidades de processamento InSAR suportadas oficialmente pela esteira científica.
      */
     @GetMapping("/processing/modalities")
-    public ResponseEntity<List<com.ass.br.apiradar.interferometry.domain.model.processing.ProcessingModality>> getSupportedModalities() {
-        return ResponseEntity.ok(List.of(com.ass.br.apiradar.interferometry.domain.model.processing.ProcessingModality.values()));
+    public ResponseEntity<List<ProcessingModality>> getSupportedModalities() {
+        return ResponseEntity.ok(List.of(ProcessingModality.values()));
+    }
+
+    /**
+     * Avalia a prontidão operacional e científica antes da submissão do primeiro processamento real do par.
+     */
+    @GetMapping("/pairs/{pairId}/readiness")
+    public ResponseEntity<InSarExecutionReadinessReport> getExecutionReadiness(
+            @PathVariable("pairId") String pairId,
+            @RequestParam("aoiId") String aoiId
+    ) {
+        InSarExecutionReadinessReport report = orchestrationService.checkOperationalReadiness(pairId, aoiId);
+        return ResponseEntity.ok(report);
+    }
+
+    /**
+     * Consulta o status atualizado do job InSAR no registro rastreado ou no cluster HyP3.
+     */
+    @GetMapping("/jobs/{jobId}")
+    public ResponseEntity<TrackedInSarJob> getJobStatus(
+            @PathVariable("jobId") String jobId
+    ) {
+        TrackedInSarJob job = orchestrationService.getJobStatus(jobId);
+        return ResponseEntity.ok(job);
+    }
+
+    /**
+     * Inspeciona os produtos locais gerados por um job já descompactado em disco.
+     */
+    @GetMapping("/jobs/{jobId}/inspection")
+    public ResponseEntity<ProductQualityMetrics> inspectJobProduct(
+            @PathVariable("jobId") String jobId,
+            @RequestParam(value = "aoiId", required = false) String aoiId
+    ) {
+        ProductQualityMetrics metrics = orchestrationService.inspectStoredProduct(jobId, aoiId);
+        return ResponseEntity.ok(metrics);
     }
 }
