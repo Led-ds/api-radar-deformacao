@@ -19,5 +19,25 @@ public record CandidateBurstPairDto(
         double secondaryCoveragePercentage,
         double commonTemporalCoveragePercentage,
         double commonTemporalCoverageKm2,
-        boolean recommended
-) implements Serializable {}
+        boolean recommended,
+        String footprintWkt
+) implements Serializable {
+
+    public CandidateBurstPairDto(
+            int relativeBurstId,
+            String subswath,
+            String polarization,
+            String referenceBurstId,
+            Instant referenceAcquisitionTime,
+            String secondaryBurstId,
+            Instant secondaryAcquisitionTime,
+            double referenceCoveragePercentage,
+            double secondaryCoveragePercentage,
+            double commonTemporalCoveragePercentage,
+            double commonTemporalCoverageKm2,
+            boolean recommended) {
+        this(relativeBurstId, subswath, polarization, referenceBurstId, referenceAcquisitionTime,
+             secondaryBurstId, secondaryAcquisitionTime, referenceCoveragePercentage, secondaryCoveragePercentage,
+             commonTemporalCoveragePercentage, commonTemporalCoverageKm2, recommended, null);
+    }
+}

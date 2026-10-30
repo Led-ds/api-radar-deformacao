@@ -21,6 +21,8 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import com.ass.br.apiradar.shared.domain.model.PolygonGeometry;
 
 /**
  * Adaptador de saída que se integra via HTTP WebClient com a API pública da NASA ASF (Alaska Satellite Facility).
@@ -132,7 +134,19 @@ public class AsfSearchClientAdapter implements SarCatalogPort {
                     String externalId = props.path("fileID").asText(props.path("granuleName").asText(sceneName));
                     String metadataSource = "Alaska Satellite Facility DAAC (NASA ASF)";
 
-                    scenes.add(new SarScene(sceneName, acquisitionDate, relativeOrbit, flightDirection, polarization, sensor, externalId, metadataSource));
+                    String footprintWkt = null;
+                    JsonNode geomNode = feature.path("geometry");
+                    if (!geomNode.isMissingNode() && !geomNode.isNull()) {
+                        try {
+                            @SuppressWarnings("unchecked")
+                            Map<String, Object> geomMap = objectMapper.convertValue(geomNode, Map.class);
+                            footprintWkt = PolygonGeometry.fromGeoJson(geomMap).wkt();
+                        } catch (Exception e) {
+                            log.debug("Não foi possível construir footprint para a cena {}: {}", sceneName, e.getMessage());
+                        }
+                    }
+
+                    scenes.add(new SarScene(sceneName, acquisitionDate, relativeOrbit, flightDirection, polarization, sensor, externalId, metadataSource, footprintWkt));
                 }
             }
         } catch (Exception e) {
