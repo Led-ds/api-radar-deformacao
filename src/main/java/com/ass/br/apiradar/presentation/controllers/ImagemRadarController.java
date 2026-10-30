@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/imagens")

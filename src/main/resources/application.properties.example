@@ -1,0 +1,29 @@
+# ==============================================================================
+# RADAR++ - EXEMPLO DE CONFIGURAÇÃO DE AMBIENTE (SEM SEGREDOS REAIS)
+# ==============================================================================
+spring.application.name=radar-plus-plus-api
+server.port=8080
+
+# Banco de Dados PostgreSQL com PostGIS
+spring.datasource.url=jdbc:postgresql://localhost:5432/radar_db
+spring.datasource.username=radar_user
+spring.datasource.password=radar_pass
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA e Flyway
+spring.jpa.hibernate.ddl-auto=validate
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.default_schema=radar
+spring.flyway.enabled=true
+spring.flyway.schemas=radar
+spring.flyway.default-schema=radar
+
+# Actuator / Health
+management.endpoints.web.exposure.include=health,info,metrics
+management.endpoint.health.show-details=always
+
+# CORS
+radar.cors.allowed-origins=http://localhost:5173,http://localhost:3000
+
+# Catálogo NASA ASF
+radar.catalog.asf-base-url=https://api.daac.asf.alaska.edu
