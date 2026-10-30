@@ -236,6 +236,8 @@ public class InSarProcessingPreparationService {
                     matchedRefGeoms.add(rb.footprint().jtsPolygon());
                 }
 
+                String burstFpWkt = rb.footprint() != null ? rb.footprint().wkt() : null;
+
                 candidatePairs.add(new CandidateBurstPairDto(
                         rb.relativeBurstId(),
                         rb.subswath(),
@@ -248,7 +250,8 @@ public class InSarProcessingPreparationService {
                         secCov,
                         commonCov,
                         commonKm2,
-                        false
+                        false,
+                        burstFpWkt
                 ));
             }
         }
@@ -272,7 +275,8 @@ public class InSarProcessingPreparationService {
                     c.secondaryCoveragePercentage(),
                     c.commonTemporalCoveragePercentage(),
                     c.commonTemporalCoverageKm2(),
-                    i == 0
+                    i == 0,
+                    c.footprintWkt()
             ));
         }
 

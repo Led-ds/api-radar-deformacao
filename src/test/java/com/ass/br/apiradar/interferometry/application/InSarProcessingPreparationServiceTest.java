@@ -175,10 +175,13 @@ class InSarProcessingPreparationServiceTest {
         assertTrue(options.candidateBurstPairs().get(0).recommended());
         assertEquals(18319, options.candidateBurstPairs().get(0).relativeBurstId());
         assertEquals(100.0, options.candidateBurstPairs().get(0).commonTemporalCoveragePercentage(), 0.1);
+        assertNotNull(options.candidateBurstPairs().get(0).footprintWkt());
+        assertTrue(options.candidateBurstPairs().get(0).footprintWkt().startsWith("POLYGON"));
 
         // Burst 18318 cobre ~69.68%
         assertEquals(18318, options.candidateBurstPairs().get(1).relativeBurstId());
         assertEquals(69.68, options.candidateBurstPairs().get(1).commonTemporalCoveragePercentage(), 0.5);
+        assertNotNull(options.candidateBurstPairs().get(1).footprintWkt());
 
         // Multi-Burst cobre 100%
         assertTrue(options.multiBurstSummary().available());
