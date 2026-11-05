@@ -7,7 +7,9 @@ FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
 # Usuário de serviço sem privilégios administrativos
-RUN groupadd -r radar && useradd -r -g radar -s /bin/false radar
+RUN groupadd -r radar && useradd -r -g radar -s /bin/false radar \
+    && mkdir -p /var/lib/radar/insar-products \
+    && chown -R radar:radar /var/lib/radar
 USER radar
 
 # Copia pacote compilado
