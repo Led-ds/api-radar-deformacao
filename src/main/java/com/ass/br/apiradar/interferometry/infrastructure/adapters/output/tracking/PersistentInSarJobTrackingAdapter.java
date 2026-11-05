@@ -83,9 +83,11 @@ public class PersistentInSarJobTrackingAdapter implements InSarJobTrackingPort {
 
         TrackedInSarJob cached = repository.findById(jobId).map(this::decode).orElse(null);
         if (cached != null) {
-            // Disponibiliza contexto (AOI/par/idempotência) ao parser remoto existente.
-            hyp3.registerOrUpdateJob(cached);
+            // Produto final já recuperado: registro persistente é suficiente,
+            // sem sincronização desnecessária com o adaptador remoto.
             if (cached.status().isSuccess() && cached.downloaded()) return cached;
+            // Para jobs não finalizados, fornece AOI/par/idempotência ao parser remoto.
+            hyp3.registerOrUpdateJob(cached);
         }
 
         // Sem job local e sem contexto: preservar o comportamento de consulta existente.
