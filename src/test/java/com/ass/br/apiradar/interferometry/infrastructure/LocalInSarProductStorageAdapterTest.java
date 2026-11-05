@@ -139,6 +139,68 @@ class LocalInSarProductStorageAdapterTest {
         assertTrue(ex.getMessage().contains("Zip Slip"));
     }
 
+
+    @Test
+    @DisplayName("Deve rejeitar ZIP com excesso de entradas sem publicar produto parcial")
+    void shouldRejectTooManyEntriesAndCleanStaging() throws Exception {
+        storageAdapter = new LocalInSarProductStorageAdapter(tempStorageDir.toString(), objectMapper, 1, 1024L);
+        TrackedInSarJob job = testJob("job-entry-limit");
+        byte[] zip = createTestZip(List.of(
+                new TestEntry("first.tif", new byte[]{1}),
+                new TestEntry("second.tif", new byte[]{2})
+        ));
+        assertThrows(SecurityException.class, () -> storageAdapter.storeJobProduct(job, zip, null));
+        assertTrue(storageAdapter.getJobProductPath(job.jobId()).isEmpty());
+        assertEquals(0, countPublishedItems());
+    }
+
+    @Test
+    @DisplayName("Deve bloquear ZIP bomb por soma de bytes descompactados")
+    void shouldLimitTotalUncompressedBytes() throws Exception {
+        storageAdapter = new LocalInSarProductStorageAdapter(tempStorageDir.toString(), objectMapper, 5, 10L);
+        TrackedInSarJob job = testJob("job-zip-bomb");
+        byte[] zip = createTestZip(List.of(
+                new TestEntry("coherence.tif", new byte[100])
+        ));
+        assertThrows(SecurityException.class, () -> storageAdapter.storeJobProduct(job, zip, null));
+        assertTrue(storageAdapter.getJobProductPath(job.jobId()).isEmpty());
+        assertEquals(0, countPublishedItems());
+    }
+
+    @Test
+    @DisplayName("Deve permitir recuperar produto a partir de nova instância sobre volume persistente")
+    void shouldFindProductAfterAdapterRestart() throws Exception {
+        TrackedInSarJob job = testJob("job-restarted");
+        byte[] zip = createTestZip(List.of(new TestEntry("coherence.tif", new byte[]{1, 2, 3})));
+        Path expected = storageAdapter.storeJobProduct(job, zip, null);
+        LocalInSarProductStorageAdapter reloaded =
+                new LocalInSarProductStorageAdapter(tempStorageDir.toString(), objectMapper);
+        assertEquals(expected, reloaded.getJobProductPath(job.jobId()).orElseThrow());
+        assertTrue(Files.readString(expected.resolve("radar_metadata.json")).contains("archiveSha256"));
+    }
+
+    @Test
+    @DisplayName("Não deve sobrescrever produto já publicado para um job")
+    void shouldRejectDuplicatePublication() throws Exception {
+        TrackedInSarJob job = testJob("job-already-stored");
+        byte[] zip = createTestZip(List.of(new TestEntry("raster.tif", new byte[]{1})));
+        Path expected = storageAdapter.storeJobProduct(job, zip, null);
+        assertThrows(IllegalStateException.class, () -> storageAdapter.storeJobProduct(job, zip, null));
+        assertArrayEquals(new byte[]{1}, Files.readAllBytes(expected.resolve("raster.tif")));
+    }
+
+    private long countPublishedItems() throws IOException {
+        try (var paths = Files.walk(tempStorageDir)) {
+            return paths.filter(p -> Files.isRegularFile(p)).count();
+        }
+    }
+
+    private TrackedInSarJob testJob(String jobId) {
+        return new TrackedInSarJob(jobId, "key-" + jobId, "PAIR-TEST", "AOI-TEST",
+                "INSAR_ISCE_BURST", JobStatus.SUCCEEDED, Instant.now(), null,
+                List.of(), null, null, false, null);
+    }
+
     private record TestEntry(String name, byte[] content) {}
 
     private byte[] createTestZip(List<TestEntry> entries) throws IOException {
